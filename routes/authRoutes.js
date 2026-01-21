@@ -147,7 +147,6 @@ router.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // Select ข้อมูลรวมถึง role (ปกติ * ก็มาหมดอยู่แล้ว)
     const [rows] = await pool.query(
       "SELECT * FROM tbl_users WHERE username = ?",
       [username],
@@ -164,21 +163,20 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: "รหัสผ่านไม่ถูกต้อง" });
     }
 
-    // เพิ่ม role เข้าไปใน Token payload
     const token = jwt.sign(
-      {
-        id: user.id,
-        username: user.username,
-        role: user.role, // <--- เพิ่มตรงนี้
-      },
+      { id: user.id, username: user.username, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "1h" },
     );
 
-    // ส่ง role กลับไปให้ Frontend ใช้งาน
+    // ✅ แก้ตรงนี้: ส่งข้อมูลผู้ใช้กลับไปพร้อม Token
     res.json({
       token,
-      role: user.role, // <--- ส่ง role กลับไปด้วย
+      user: {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+      },
     });
   } catch (error) {
     console.error(error);
